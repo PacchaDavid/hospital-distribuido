@@ -1,6 +1,7 @@
 import { resolveIdentity } from "./identity.js";
 import { HEARTBEAT_INTERVAL_MS } from "./config.js";
 import { logger } from "./logger.js";
+import { encodeMessage } from "./tcp/protocol.js";
 import { TcpServer } from "./tcp/server.js";
 import { ConnectionManager } from "./tcp/connection.js";
 import { ElectionManager } from "./bully/election.js";
@@ -84,11 +85,17 @@ async function main() {
     socket?.broadcastState();
   }
 
-  tcpServer.on("message", ({ nodeId, message }: { nodeId: number; message: any }) => {
+  tcpServer.on("message", ({ nodeId, message, socket }: { nodeId: number; message: any; socket: any }) => {
     handleTcpMessage(nodeId, message);
+    if (election.isCoordinator() && message.type === "HEARTBEAT") {
+      socket.write(encodeMessage({ type: "HEARTBEAT_ACK" }));
+    }
   });
-  tcpServer.on("identified", ({ nodeId }: { nodeId: number }) => {
+  tcpServer.on("identified", ({ nodeId, socket }: { nodeId: number; socket: any }) => {
     election.handleNodeAppeared(nodeId);
+    if (election.isCoordinator()) {
+      socket.write(encodeMessage({ type: "COORDINATOR", coordinatorId: identity.id }));
+    }
   });
 
   connections.on("message", ({ nodeId, message }: { nodeId: number; message: any }) => {

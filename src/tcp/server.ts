@@ -36,7 +36,7 @@ export class TcpServer extends EventEmitter {
         } else {
           const nodeId = this.reverseLookup.get(remoteAddr);
           if (nodeId !== undefined) {
-            this.emit("message", { nodeId, message: msg });
+            this.emit("message", { nodeId, message: msg, socket });
           }
         }
       });

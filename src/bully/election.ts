@@ -168,9 +168,6 @@ export class ElectionManager extends EventEmitter {
     const prevCoordId = this.coordinatorId;
     this.coordinatorId = coordId;
     this.markNodeAlive(coordId, "COORDINATOR");
-    if (prevCoordId && prevCoordId !== coordId) {
-      this.markNodeAlive(prevCoordId, "FOLLOWER");
-    }
     if (this.identity.id === coordId) {
       this.setState("COORDINATOR");
       this.emit("coordinatorChanged", coordId);
