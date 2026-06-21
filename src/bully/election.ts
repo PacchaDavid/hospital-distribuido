@@ -138,7 +138,7 @@ export class ElectionManager extends EventEmitter {
   handleElection(msg: TcpMessage, senderId: number): void {
     if (senderId < this.identity.id) {
       this.connections.send(senderId, { type: "OK", senderId: this.identity.id });
-      if (this.state !== "ELECTION" && this.state !== "COORDINATOR") {
+      if (this.state !== "ELECTION" && this.state !== "COORDINATOR" && this.state !== "FOLLOWER") {
         this.startElection();
       }
     }
@@ -163,11 +163,25 @@ export class ElectionManager extends EventEmitter {
     }
   }
 
+  markNodeOffline(nodeId: number): void {
+    const node = this.nodes.get(nodeId);
+    if (node && node.state !== "OFFLINE") {
+      const prevState = node.state;
+      node.state = "OFFLINE";
+      node.lastHeartbeat = 0;
+      this.emit("nodeDown", nodeId);
+      this.emit("logEvent", `Nodo ${node.name} desconectado (estado previo: ${prevState}).`);
+    }
+  }
+
   handleCoordinator(msg: TcpMessage): void {
     const coordId = msg.coordinatorId as number;
     const prevCoordId = this.coordinatorId;
     this.coordinatorId = coordId;
     this.markNodeAlive(coordId, "COORDINATOR");
+    if (prevCoordId && prevCoordId !== coordId) {
+      this.markNodeAlive(prevCoordId, "FOLLOWER");
+    }
     if (this.identity.id === coordId) {
       this.setState("COORDINATOR");
       this.emit("coordinatorChanged", coordId);
@@ -214,10 +228,6 @@ export class ElectionManager extends EventEmitter {
         this.emit("nodeUp", senderId);
       }
       node.state = "FOLLOWER";
-    }
-
-    if (this.state === "COORDINATOR") {
-      this.connections.send(senderId, { type: "HEARTBEAT_ACK" });
     }
   }
 

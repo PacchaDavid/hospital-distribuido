@@ -39,11 +39,7 @@ async function main() {
   let socket: SocketManager;
 
   function handleTcpMessage(senderId: number, msg: any) {
-    if (senderId === election.getCoordinatorId()) {
-      election.markNodeAlive(senderId, "COORDINATOR");
-    } else {
-      election.markNodeAlive(senderId, "FOLLOWER");
-    }
+    election.markNodeAlive(senderId, "FOLLOWER");
     switch (msg.type) {
       case "HEARTBEAT":
         election.handleHeartbeat(msg, senderId);
@@ -97,6 +93,9 @@ async function main() {
       socket.write(encodeMessage({ type: "COORDINATOR", coordinatorId: identity.id }));
     }
   });
+  tcpServer.on("disconnected", (nodeId: number) => {
+    election.markNodeOffline(nodeId);
+  });
 
   connections.on("message", ({ nodeId, message }: { nodeId: number; message: any }) => {
     handleTcpMessage(nodeId, message);
@@ -106,6 +105,9 @@ async function main() {
     if (election.isCoordinator()) {
       connections.send(nodeId, { type: "COORDINATOR", coordinatorId: identity.id });
     }
+  });
+  connections.on("disconnected", (nodeId: number) => {
+    election.markNodeOffline(nodeId);
   });
 
   tcpServer.start();
