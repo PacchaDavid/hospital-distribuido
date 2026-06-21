@@ -40,11 +40,11 @@ const CARD_STYLES: Record<string, CardStyle> = {
     labelColor: "text-jade-400",
   },
   ELECTION: {
-    border: "border-gold-500/40",
-    bg: "bg-gold-900/20",
-    dot: "bg-gold-500",
+    border: "border-blue-500/40",
+    bg: "bg-blue-900/20",
+    dot: "bg-blue-500",
     label: "Elección",
-    labelColor: "text-gold-400",
+    labelColor: "text-blue-400",
   },
   SUSPECTED_DOWN: {
     border: "border-crimson-700/40",

@@ -1,13 +1,13 @@
 {
-  "version": 1,
+  "version": 3,
   "organs": [
     {
       "id": "ORG-001",
       "tipo_organo": "Riñón",
       "donante": "DON-001",
       "hospital_origen": "Hospital Loja",
-      "estado": "Disponible",
-      "ultima_actualizacion": "2026-06-21T10:30:00.000Z"
+      "estado": "Asignado",
+      "ultima_actualizacion": "2026-06-21T21:33:30.152Z"
     },
     {
       "id": "ORG-002",

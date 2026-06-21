@@ -18,7 +18,7 @@ const NODE_NAMES: Record<number, string> = {
 const STATUS_COLORS: Record<string, string> = {
   COORDINATOR: "bg-gold-500",
   FOLLOWER: "bg-jade-500",
-  ELECTION: "bg-gold-500",
+  ELECTION: "bg-blue-500",
   SUSPECTED_DOWN: "bg-crimson-700",
   STARTING: "bg-steel",
   OFFLINE: "bg-steel-dark",

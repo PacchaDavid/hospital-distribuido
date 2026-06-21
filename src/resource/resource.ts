@@ -150,4 +150,21 @@ export class ResourceManager extends EventEmitter {
       }
     }
   }
+
+  handleResourceSync(msg: TcpMessage): void {
+    const remoteVersion = msg.version as number;
+    const data = msg.data as Organ[];
+
+    if (remoteVersion > this.version) {
+      this.organs = data;
+      this.version = remoteVersion;
+      this.saveToDisk();
+      this.emit("organsChanged", this.organs, this.version);
+      this.emit("logEvent", `Recurso sincronizado desde nodo remoto. Versión ${remoteVersion}.`);
+    }
+
+    if (this.election.isCoordinator()) {
+      this.broadcastUpdate();
+    }
+  }
 }

@@ -77,6 +77,9 @@ async function main() {
       case "RESOURCE_ACK":
         resource.handleResourceAck(msg);
         break;
+      case "RESOURCE_SYNC":
+        resource.handleResourceSync(msg);
+        break;
     }
     socket?.broadcastState();
   }
@@ -146,7 +149,20 @@ async function main() {
     socket?.emitMutexChanged(data);
   });
   mutex.on("accessGranted", () => socket?.emitAccessGranted());
-  mutex.on("accessReleased", () => socket?.emitAccessReleased());
+  mutex.on("accessReleased", () => {
+    socket?.emitAccessReleased();
+    const coordId = election.getCoordinatorId();
+    if (coordId && coordId !== identity.id) {
+      connections.send(coordId, {
+        type: "RESOURCE_SYNC",
+        version: resource.getVersion(),
+        data: resource.getOrgans(),
+      });
+    }
+    if (election.isCoordinator()) {
+      resource.broadcastUpdate();
+    }
+  });
   mutex.on("logEvent", (message: string) => socket?.broadcastEvent(message));
 
   resource.on("organsChanged", (organs: unknown[], version: number) => {
