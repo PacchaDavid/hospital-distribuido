@@ -65,8 +65,12 @@ export class TcpServer extends EventEmitter {
       socket.on("data", (data: Buffer) => buf.push(data));
     });
 
-    this.server.on("error", (err) => {
-      logger.error(`TCP server error: ${err.message}`);
+    this.server.on("error", (err: NodeJS.ErrnoException) => {
+      if (err.code === "EADDRINUSE") {
+        logger.error(`TCP port ${TCP_PORT} already in use`);
+      } else {
+        logger.error(`TCP server error: ${err.message}`);
+      }
     });
   }
 

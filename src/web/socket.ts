@@ -6,8 +6,6 @@ import type { CristianSync } from "../cristian/sync.js";
 import type { MutexManager } from "../mutex/mutex.js";
 import type { ResourceManager } from "../resource/resource.js";
 import type { NodeIdentity } from "../identity.js";
-import type { NodeInfo } from "../bully/election.js";
-
 
 export class SocketManager {
   private io: Server;
@@ -74,7 +72,10 @@ export class SocketManager {
       });
     });
 
-    this.io.listen(WS_PORT);
+    const httpServer = this.io.listen(WS_PORT);
+    httpServer.on("error", (err: NodeJS.ErrnoException) => {
+      logger.error(`Socket.IO failed on port ${WS_PORT}: ${err.message}`);
+    });
     logger.info(`Socket.IO listening on port ${WS_PORT}`);
   }
 
