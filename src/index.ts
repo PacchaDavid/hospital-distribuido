@@ -29,111 +29,13 @@ async function main() {
   await store.init();
 
   const tcpServer = new TcpServer();
-  tcpServer.start();
-
   const connections = new ConnectionManager(identity);
-  connections.connectToAll();
-
   const election = new ElectionManager(identity, connections);
   const cristian = new CristianSync(identity, connections, election);
   const mutex = new MutexManager(identity, connections, election);
   const resource = new ResourceManager(identity, connections, election);
 
   let socket: SocketManager;
-
-  const savedState = store.loadClusterState();
-  if (savedState.syncEnabled) {
-    cristian.loadState({ enabled: true, lastSync: null, lastOffset: null });
-  }
-  if (savedState.resourceVersion > 0) {
-    resource.loadFromDisk();
-  }
-
-  election.on("logEvent", (message: string) => {
-    logger.info(message);
-    socket?.broadcastEvent(message);
-  });
-
-  election.on("coordinatorChanged", (coordinatorId: number) => {
-    store.saveClusterState({ coordinatorId });
-    socket?.emitCoordinatorChange(coordinatorId);
-    cristian.handleCoordinatorChange(coordinatorId);
-    mutex.resetForNewCoordinator();
-    socket?.broadcastState();
-  });
-
-  election.on("stateChanged", () => {
-    socket?.broadcastState();
-  });
-
-  election.on("nodeDown", (nodeId: number) => {
-    socket?.emitNodeDown(nodeId);
-  });
-
-  election.on("nodeUp", (nodeId: number) => {
-    socket?.emitNodeUp(nodeId);
-  });
-
-  cristian.on("syncStateChanged", (state: { enabled: boolean; lastSync: number | null; lastOffset: number | null }) => {
-    store.saveClusterState({ syncEnabled: state.enabled });
-    socket?.emitSyncStateChanged(state);
-  });
-
-  cristian.on("logEvent", (message: string) => {
-    socket?.broadcastEvent(message);
-  });
-
-  mutex.on("mutexChanged", (data: { state: string; queue: unknown[]; currentUser: number | null }) => {
-    socket?.emitMutexChanged(data);
-  });
-
-  mutex.on("accessGranted", () => {
-    socket?.emitAccessGranted();
-  });
-
-  mutex.on("accessReleased", () => {
-    socket?.emitAccessReleased();
-  });
-
-  mutex.on("logEvent", (message: string) => {
-    socket?.broadcastEvent(message);
-  });
-
-  resource.on("organsChanged", (organs: unknown[], version: number) => {
-    socket?.emitOrgansChanged(organs, version);
-    store.saveClusterState({ resourceVersion: version });
-  });
-
-  resource.on("logEvent", (message: string) => {
-    socket?.broadcastEvent(message);
-  });
-
-  resource.loadFromDisk();
-
-  const controllers: Controllers = { identity, election, cristian, mutex, resource };
-
-  await startApi(controllers);
-
-  socket = new SocketManager({ identity, election, cristian, mutex, resource });
-
-  tcpServer.on("message", ({ nodeId, message }: { nodeId: number; message: any }) => {
-    handleTcpMessage(nodeId, message);
-  });
-
-  connections.on("message", ({ nodeId, message }: { nodeId: number; message: any }) => {
-    handleTcpMessage(nodeId, message);
-  });
-
-  tcpServer.on("identified", ({ nodeId }: { nodeId: number }) => {
-    election.handleNodeAppeared(nodeId);
-  });
-
-  connections.on("identified", ({ nodeId }: { nodeId: number }) => {
-    election.handleNodeAppeared(nodeId);
-    if (election.isCoordinator()) {
-      connections.send(nodeId, { type: "COORDINATOR", coordinatorId: identity.id });
-    }
-  });
 
   function handleTcpMessage(senderId: number, msg: any) {
     switch (msg.type) {
@@ -174,8 +76,78 @@ async function main() {
         resource.handleResourceAck(msg);
         break;
     }
-    socket.broadcastState();
+    socket?.broadcastState();
   }
+
+  tcpServer.on("message", ({ nodeId, message }: { nodeId: number; message: any }) => {
+    handleTcpMessage(nodeId, message);
+  });
+  tcpServer.on("identified", ({ nodeId }: { nodeId: number }) => {
+    election.handleNodeAppeared(nodeId);
+  });
+
+  connections.on("message", ({ nodeId, message }: { nodeId: number; message: any }) => {
+    handleTcpMessage(nodeId, message);
+  });
+  connections.on("identified", ({ nodeId }: { nodeId: number }) => {
+    election.handleNodeAppeared(nodeId);
+    if (election.isCoordinator()) {
+      connections.send(nodeId, { type: "COORDINATOR", coordinatorId: identity.id });
+    }
+  });
+
+  tcpServer.start();
+  connections.connectToAll();
+
+  const savedState = store.loadClusterState();
+  if (savedState.syncEnabled) {
+    cristian.loadState({ enabled: true, lastSync: null, lastOffset: null });
+  }
+  if (savedState.resourceVersion > 0) {
+    resource.loadFromDisk();
+  }
+
+  election.on("logEvent", (message: string) => {
+    logger.info(message);
+    socket?.broadcastEvent(message);
+  });
+  election.on("coordinatorChanged", (coordinatorId: number) => {
+    store.saveClusterState({ coordinatorId });
+    socket?.emitCoordinatorChange(coordinatorId);
+    cristian.handleCoordinatorChange(coordinatorId);
+    mutex.resetForNewCoordinator();
+    socket?.broadcastState();
+  });
+  election.on("stateChanged", () => socket?.broadcastState());
+  election.on("nodeDown", (nodeId: number) => socket?.emitNodeDown(nodeId));
+  election.on("nodeUp", (nodeId: number) => socket?.emitNodeUp(nodeId));
+
+  cristian.on("syncStateChanged", (state: { enabled: boolean; lastSync: number | null; lastOffset: number | null }) => {
+    store.saveClusterState({ syncEnabled: state.enabled });
+    socket?.emitSyncStateChanged(state);
+  });
+  cristian.on("logEvent", (message: string) => socket?.broadcastEvent(message));
+
+  mutex.on("mutexChanged", (data: { state: string; queue: unknown[]; currentUser: number | null }) => {
+    socket?.emitMutexChanged(data);
+  });
+  mutex.on("accessGranted", () => socket?.emitAccessGranted());
+  mutex.on("accessReleased", () => socket?.emitAccessReleased());
+  mutex.on("logEvent", (message: string) => socket?.broadcastEvent(message));
+
+  resource.on("organsChanged", (organs: unknown[], version: number) => {
+    socket?.emitOrgansChanged(organs, version);
+    store.saveClusterState({ resourceVersion: version });
+  });
+  resource.on("logEvent", (message: string) => socket?.broadcastEvent(message));
+
+  resource.loadFromDisk();
+
+  const controllers: Controllers = { identity, election, cristian, mutex, resource };
+
+  await startApi(controllers);
+
+  socket = new SocketManager({ identity, election, cristian, mutex, resource });
 
   election.init();
 

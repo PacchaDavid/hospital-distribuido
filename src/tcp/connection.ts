@@ -54,7 +54,10 @@ export class ConnectionManager extends EventEmitter {
       logger.warn(`Connection to node ${nodeId} closed`);
       this.emit("disconnected", nodeId);
       RECONNECTING.add(nodeId);
-      setTimeout(() => this.connectTo(nodeId, ip), RECONNECT_INTERVAL_MS);
+      setTimeout(() => {
+        RECONNECTING.delete(nodeId);
+        this.connectTo(nodeId, ip);
+      }, RECONNECT_INTERVAL_MS);
     });
 
     socket.on("error", (err) => {
