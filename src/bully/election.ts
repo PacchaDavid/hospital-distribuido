@@ -97,6 +97,11 @@ export class ElectionManager extends EventEmitter {
   }
 
   private startElection(): void {
+    if (this.state === "ELECTION") return;
+    if (this.electionTimer) {
+      clearTimeout(this.electionTimer);
+      this.electionTimer = null;
+    }
     this.setState("ELECTION");
     this.emit("logEvent", `Nueva elección iniciada por ${this.identity.name}.`);
 
@@ -104,7 +109,7 @@ export class ElectionManager extends EventEmitter {
     this.okReceived = false;
 
     if (higher.length === 0) {
-      setTimeout(() => this.declareCoordinator(), 500);
+      this.electionTimer = setTimeout(() => this.declareCoordinator(), 500);
       return;
     }
 
@@ -225,6 +230,7 @@ export class ElectionManager extends EventEmitter {
   }
 
   handleNodeAppeared(nodeId: number): void {
+    if (this.state === "ELECTION") return;
     if (this.state === "COORDINATOR" && nodeId > this.identity.id) {
       this.emit("logEvent", `Nodo ID ${nodeId} de mayor ID apareció. ${this.identity.name} cede liderazgo.`);
       this.setState("FOLLOWER");
@@ -232,9 +238,9 @@ export class ElectionManager extends EventEmitter {
       this.emit("coordinatorChanged", nodeId);
       return;
     }
-    if (nodeId > (this.coordinatorId ?? 0)) {
+    if (this.state !== "FOLLOWER" && nodeId > (this.coordinatorId ?? 0)) {
       this.emit("logEvent", `Nodo ID ${nodeId} de mayor ID reapareció. ${this.identity.name} inicia elección.`);
-      setTimeout(() => this.startElection(), 500);
+      this.startElection();
     }
   }
 
