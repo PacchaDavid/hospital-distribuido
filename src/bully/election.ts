@@ -63,6 +63,9 @@ export class ElectionManager extends EventEmitter {
   private setState(newState: NodeState): void {
     const oldState = this.state;
     this.state = newState;
+    if (newState === "FOLLOWER") {
+      this.lastHeartbeatAck = Date.now();
+    }
     this.updateNodeInfo(this.identity.id, newState);
     logger.info(`State: ${oldState} -> ${newState}`);
     this.emit("stateChanged", { nodeId: this.identity.id, oldState, newState });
