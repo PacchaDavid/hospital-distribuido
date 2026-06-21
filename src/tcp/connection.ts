@@ -61,7 +61,7 @@ export class ConnectionManager extends EventEmitter {
       logger.error(`Connection error to node ${nodeId}: ${err.message}`);
     });
 
-    socket.pipe(buf as unknown as NodeJS.WritableStream);
+    socket.on("data", (data: Buffer) => buf.push(data));
   }
 
   send(nodeId: number, msg: TcpMessage): void {

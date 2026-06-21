@@ -62,7 +62,7 @@ export class TcpServer extends EventEmitter {
         logger.error(`TCP server socket error: ${err.message}`);
       });
 
-      socket.pipe(buf as unknown as NodeJS.WritableStream);
+      socket.on("data", (data: Buffer) => buf.push(data));
     });
 
     this.server.on("error", (err) => {
