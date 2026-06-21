@@ -1,7 +1,7 @@
 export const NODE_TABLE = [
-  { id: 1, ip: "192.168.1.10", name: "Hospital Loja" },
-  { id: 2, ip: "192.168.1.11", name: "Hospital Cuenca" },
-  { id: 3, ip: "192.168.1.12", name: "Hospital Esmeraldas" },
+  { id: 1, ip: "192.168.1.145", name: "Hospital Loja" },
+  { id: 2, ip: "192.168.1.190", name: "Hospital Cuenca" },
+  { id: 3, ip: "192.168.1.204", name: "Hospital Esmeraldas" },
   { id: 4, ip: "192.168.1.13", name: "Hospital Guayaquil" },
   { id: 5, ip: "192.168.1.14", name: "Hospital Quito" },
 ] as const;

@@ -38,6 +38,11 @@ async function main() {
   let socket: SocketManager;
 
   function handleTcpMessage(senderId: number, msg: any) {
+    if (senderId === election.getCoordinatorId()) {
+      election.markNodeAlive(senderId, "COORDINATOR");
+    } else {
+      election.markNodeAlive(senderId, "FOLLOWER");
+    }
     switch (msg.type) {
       case "HEARTBEAT":
         election.handleHeartbeat(msg, senderId);

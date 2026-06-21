@@ -152,9 +152,21 @@ export class ElectionManager extends EventEmitter {
     }
   }
 
+  markNodeAlive(nodeId: number, state: NodeState): void {
+    const node = this.nodes.get(nodeId);
+    if (node) {
+      node.lastHeartbeat = Date.now();
+      if (node.state === "OFFLINE" || node.state === "SUSPECTED_DOWN") {
+        this.emit("nodeUp", nodeId);
+      }
+      node.state = state;
+    }
+  }
+
   handleCoordinator(msg: TcpMessage): void {
     const coordId = msg.coordinatorId as number;
     this.coordinatorId = coordId;
+    this.markNodeAlive(coordId, "COORDINATOR");
     if (this.identity.id === coordId) {
       this.setState("COORDINATOR");
       this.emit("coordinatorChanged", coordId);
@@ -210,6 +222,9 @@ export class ElectionManager extends EventEmitter {
 
   handleHeartbeatAck(): void {
     this.lastHeartbeatAck = Date.now();
+    if (this.coordinatorId) {
+      this.markNodeAlive(this.coordinatorId, "COORDINATOR");
+    }
   }
 
   checkCoordinatorAlive(): boolean {
