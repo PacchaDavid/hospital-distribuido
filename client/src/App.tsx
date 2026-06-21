@@ -7,13 +7,21 @@ import OrganPanel from "./components/OrganPanel";
 import EventLog from "./components/EventLog";
 import type { ClusterState } from "./types";
 
-const nodeStateColors: Record<string, string> = {
-  COORDINATOR: "bg-green-600",
-  FOLLOWER: "bg-blue-600",
-  SUSPECTED_DOWN: "bg-red-600",
-  ELECTION: "bg-yellow-500",
-  STARTING: "bg-gray-500",
-  OFFLINE: "bg-red-800",
+const NODE_NAMES: Record<number, string> = {
+  1: "Loja",
+  2: "Cuenca",
+  3: "Esmeraldas",
+  4: "Guayaquil",
+  5: "Quito",
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  COORDINATOR: "bg-crimson-500",
+  FOLLOWER: "bg-jade-500",
+  ELECTION: "bg-gold-500",
+  SUSPECTED_DOWN: "bg-crimson-700",
+  STARTING: "bg-steel",
+  OFFLINE: "bg-steel-dark",
 };
 
 function App() {
@@ -69,41 +77,94 @@ function App() {
   if (!cluster) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p className="text-xl text-gray-400">Conectando al clúster...</p>
+        <div className="text-center space-y-3">
+          <div className="inline-flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-crimson-500 animate-breath" />
+            <span className="font-display text-xl font-semibold tracking-tight text-bone">
+              organ-cluster
+            </span>
+          </div>
+          <p className="text-bone-muted text-sm">Conectando al clúster...</p>
+        </div>
       </div>
     );
   }
 
-  const stateColor = nodeStateColors[cluster.state] || "bg-gray-500";
+  const statusDots = [1, 2, 3, 4, 5].map((id) => {
+    const node = cluster.nodes.find((n) => n.id === id);
+    const state = node?.state || "OFFLINE";
+    const color = STATUS_COLORS[state] || "bg-steel-dark";
+    const isCoord = cluster.coordinatorId === id;
+    return { id, state, color, isCoord };
+  });
 
   return (
-    <div className="min-h-screen p-4 max-w-7xl mx-auto">
-      <header className="mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Sistema Distribuido de Donación de Órganos</h1>
-            <p className="text-gray-400 mt-1">
-              {cluster.name} (ID: {cluster.nodeId}) -{" "}
-              <span className={`inline-block w-3 h-3 rounded-full ${stateColor} mr-1`}></span>
-              {cluster.state}
+    <div className="min-h-screen bg-midnight">
+      <header className="border-b border-white/5">
+        <div className="max-w-6xl mx-auto px-5 py-4 flex items-center justify-between">
+          <div className="space-y-0.5">
+            <h1 className="font-display text-lg font-bold tracking-tight text-bone">
+              organ-cluster
+            </h1>
+            <p className="text-bone-muted text-xs font-display">
+              {cluster.name} (ID: {cluster.nodeId}) &middot; v{cluster.resourceVersion}
             </p>
           </div>
-          <div className="text-right text-sm text-gray-400">
-            <p>Coordinador: {cluster.coordinatorId ? cluster.nodes.find((n) => n.id === cluster.coordinatorId)?.name ?? `ID ${cluster.coordinatorId}` : "N/A"}</p>
-            <p>Versión recurso: {cluster.resourceVersion}</p>
+
+          <div className="flex items-center gap-3">
+            <div className="flex items-center -space-x-0.5">
+              {statusDots.map((dot) => (
+                <div
+                  key={dot.id}
+                  className="relative group"
+                >
+                  <span
+                    className={`block w-2.5 h-2.5 rounded-full border border-midnight/60 ${dot.color} ${
+                      dot.isCoord ? "animate-breath" : ""
+                    }`}
+                  />
+                  <div className="absolute top-full right-0 mt-1.5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity bg-surface border border-white/10 rounded px-2 py-1 text-[11px] whitespace-nowrap text-bone-muted z-10">
+                    {NODE_NAMES[dot.id]} &middot; {dot.state}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <span className="h-4 w-px bg-white/10" />
+
+            <div className="text-right text-[11px] leading-tight text-bone-muted font-display">
+              <p>
+                Coordinador:{" "}
+                <span className="text-crimson-400 font-semibold">
+                  {cluster.coordinatorId
+                    ? NODE_NAMES[cluster.coordinatorId] ?? `#${cluster.coordinatorId}`
+                    : "—"}
+                </span>
+              </p>
+              <p className="text-[10px]">
+                {cluster.syncState.lastOffset !== null
+                  ? `Desfase: ${cluster.syncState.lastOffset >= 0 ? "+" : ""}${cluster.syncState.lastOffset}ms`
+                  : "Sin sincronizar"}
+              </p>
+            </div>
           </div>
         </div>
       </header>
 
-      <Dashboard nodes={cluster.nodes} cluster={cluster} />
+      <main className="max-w-6xl mx-auto px-5 py-6 space-y-8">
+        <Dashboard nodes={cluster.nodes} cluster={cluster} />
 
-      {cluster.isCoordinator && <CoordinatorPanel />}
+        {cluster.isCoordinator && <CoordinatorPanel />}
 
-      <OrganPanel />
-      <EventLog />
+        <OrganPanel />
 
-      <footer className="mt-8 text-center text-xs text-gray-600">
-        Organ Cluster v1.0 - Bully &middot; Cristian &middot; Exclusión Mutua Centralizada
+        <EventLog />
+      </main>
+
+      <footer className="border-t border-white/5 py-4">
+        <p className="text-center text-[11px] text-bone-muted font-display">
+          Bully &middot; Cristian &middot; Exclusión Mutua Centralizada
+        </p>
       </footer>
     </div>
   );

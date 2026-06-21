@@ -3,11 +3,11 @@ import { getSocket } from "../socket";
 import { useStore } from "../store";
 
 const NODE_NAMES: Record<number, string> = {
-  1: "Hospital Loja",
-  2: "Hospital Cuenca",
-  3: "Hospital Esmeraldas",
-  4: "Hospital Guayaquil",
-  5: "Hospital Quito",
+  1: "Loja",
+  2: "Cuenca",
+  3: "Esmeraldas",
+  4: "Guayaquil",
+  5: "Quito",
 };
 
 function CoordinatorPanel() {
@@ -26,77 +26,117 @@ function CoordinatorPanel() {
     getSocket().emit("toggleSync", enabled);
   };
 
-  const isAccessing = cluster.mutexAccess;
-  const queueNames = cluster.mutex.queue.map((item) => ({
+  const queue = cluster.mutex.queue.map((item) => ({
     nodeId: item.nodeId,
     name: NODE_NAMES[item.nodeId] || `ID ${item.nodeId}`,
   }));
 
-  const currentUserName = cluster.mutex.currentUser
+  const currentUser = cluster.mutex.currentUser
     ? NODE_NAMES[cluster.mutex.currentUser] || `ID ${cluster.mutex.currentUser}`
     : null;
 
   return (
-    <div className="mb-6 p-4 rounded-lg bg-green-900/20 border border-green-700/50">
-      <h2 className="text-lg font-semibold mb-3 text-green-300">Panel de Coordinación</h2>
+    <section className="rounded-sm border border-crimson-500/30 bg-crimson-950/20 px-5 py-4">
+      <div className="flex items-center gap-2 mb-4">
+        <span className="w-1.5 h-1.5 rounded-full bg-crimson-500 animate-breath" />
+        <h2 className="font-display text-sm font-semibold text-crimson-400">
+          Panel de Coordinación
+        </h2>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <h3 className="text-sm font-semibold mb-2 text-green-200">Sincronización Cristian</h3>
-          <div className="space-y-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-3">
+          <h3 className="font-display text-xs font-semibold text-bone-muted uppercase tracking-wider">
+            Sincronización Cristian
+          </h3>
+
+          <div className="flex items-center gap-3">
             <button
               onClick={handleSyncNow}
               disabled={syncing}
-              className="px-4 py-2 bg-green-700 hover:bg-green-600 disabled:bg-green-900 rounded text-sm"
+              className="px-3.5 py-1.5 rounded-sm bg-crimson-500/20 border border-crimson-500/40
+                font-display text-xs font-medium text-crimson-400
+                hover:bg-crimson-500/30 hover:border-crimson-500/60
+                disabled:opacity-40 disabled:cursor-not-allowed
+                transition-colors"
             >
-              {syncing ? "Sincronizando..." : "Sincronizar Ahora"}
+              {syncing ? "Sincronizando..." : "Sincronizar ahora"}
             </button>
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
+
+            <label className="flex items-center gap-1.5 cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={cluster.syncState.enabled}
                 onChange={(e) => handleToggleSync(e.target.checked)}
-                className="accent-green-500"
+                className="accent-crimson-500 w-3 h-3"
               />
-              Sincronización Periódica
+              <span className="font-display text-[11px] text-bone-muted">
+                Automática
+              </span>
             </label>
-            {cluster.syncState.lastSync && (
-              <div className="text-xs text-gray-400 space-y-1 mt-2">
-                <p>Última sincronización: {new Date(cluster.syncState.lastSync).toLocaleTimeString()}</p>
-                {cluster.syncState.lastOffset !== null && (
-                  <p>Desfase: {cluster.syncState.lastOffset}ms</p>
-                )}
-              </div>
-            )}
           </div>
+
+          {cluster.syncState.lastSync && (
+            <div className="space-y-0.5 font-mono text-[10px] text-bone-muted/60">
+              <p>
+                Última sincronización:{" "}
+                {new Date(cluster.syncState.lastSync).toLocaleTimeString()}
+              </p>
+              {cluster.syncState.lastOffset !== null && (
+                <p>
+                  Desfase:{" "}
+                  <span className={cluster.syncState.lastOffset <= 50 ? "text-jade-400" : "text-gold-400"}>
+                    {cluster.syncState.lastOffset >= 0 ? "+" : ""}
+                    {cluster.syncState.lastOffset}ms
+                  </span>
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
-        <div>
-          <h3 className="text-sm font-semibold mb-2 text-green-200">Exclusión Mutua</h3>
-          <div className="text-sm space-y-1">
-            <p>
-              Estado:{" "}
-              <span className={cluster.mutex.state === "OCUPADO" ? "text-yellow-400" : "text-green-400"}>
-                {cluster.mutex.state === "OCUPADO" ? "Ocupado" : "Libre"}
-              </span>
-            </p>
-            {currentUserName && (
-              <p className="text-yellow-300">Ocupado por: {currentUserName}</p>
-            )}
-            {queueNames.length > 0 && (
-              <div className="mt-2">
-                <p className="text-xs text-gray-400 mb-1">Cola FIFO:</p>
-                <ol className="list-decimal list-inside text-xs space-y-0.5">
-                  {queueNames.map((item, i) => (
-                    <li key={i}>{item.name}</li>
-                  ))}
-                </ol>
-              </div>
-            )}
+        <div className="space-y-3">
+          <h3 className="font-display text-xs font-semibold text-bone-muted uppercase tracking-wider">
+            Exclusión Mutua
+          </h3>
+
+          <div className="flex items-center gap-2">
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                cluster.mutex.state === "OCUPADO" ? "bg-gold-500 animate-breath" : "bg-jade-500"
+              }`}
+            />
+            <span className="font-display text-xs font-medium text-bone">
+              {cluster.mutex.state === "OCUPADO" ? "Ocupado" : "Libre"}
+            </span>
           </div>
+
+          {currentUser && (
+            <p className="font-display text-[11px] text-gold-400">
+              Ocupado por: {currentUser}
+            </p>
+          )}
+
+          {queue.length > 0 && (
+            <div>
+              <p className="font-display text-[10px] text-bone-muted uppercase tracking-wider mb-1">
+                Cola FIFO
+              </p>
+              <ol className="space-y-0.5">
+                {queue.map((item, i) => (
+                  <li
+                    key={i}
+                    className="font-mono text-[11px] text-bone-muted"
+                  >
+                    {String(i + 1).padStart(2, "0")}. {item.name}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
