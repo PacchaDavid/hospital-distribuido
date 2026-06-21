@@ -1,0 +1,121 @@
+import { EventEmitter } from "node:events";
+import { exec } from "node:child_process";
+import { promisify } from "node:util";
+import { CRISTIAN_SYNC_INTERVAL_MS, MIN_TIME_ADJUSTMENT_MS } from "../config.js";
+import { logger } from "../logger.js";
+import type { NodeIdentity } from "../identity.js";
+import type { TcpMessage } from "../tcp/protocol.js";
+import type { ConnectionManager } from "../tcp/connection.js";
+import type { ElectionManager } from "../bully/election.js";
+
+const execAsync = promisify(exec);
+
+export interface SyncState {
+  enabled: boolean;
+  lastSync: number | null;
+  lastOffset: number | null;
+}
+
+export class CristianSync extends EventEmitter {
+  private identity: NodeIdentity;
+  private connections: ConnectionManager;
+  private election: ElectionManager;
+  private syncState: SyncState = { enabled: false, lastSync: null, lastOffset: null };
+  private periodicTimer: ReturnType<typeof setInterval> | null = null;
+
+  constructor(
+    identity: NodeIdentity,
+    connections: ConnectionManager,
+    election: ElectionManager,
+  ) {
+    super();
+    this.identity = identity;
+    this.connections = connections;
+    this.election = election;
+  }
+
+  getSyncState(): SyncState {
+    return { ...this.syncState };
+  }
+
+  setEnabled(enabled: boolean): void {
+    this.syncState.enabled = enabled;
+    this.emit("syncStateChanged", this.syncState);
+
+    if (enabled && !this.periodicTimer) {
+      this.periodicTimer = setInterval(() => this.syncNow(), CRISTIAN_SYNC_INTERVAL_MS);
+    } else if (!enabled && this.periodicTimer) {
+      clearInterval(this.periodicTimer);
+      this.periodicTimer = null;
+    }
+  }
+
+  isEnabled(): boolean {
+    return this.syncState.enabled;
+  }
+
+  async syncNow(): Promise<void> {
+    const coordinatorId = this.election.getCoordinatorId();
+    if (!coordinatorId || coordinatorId === this.identity.id) return;
+    if (!this.connections.isConnected(coordinatorId)) {
+      logger.warn("Cannot sync: coordinator not connected");
+      return;
+    }
+
+    const T0 = Date.now();
+    this.connections.send(coordinatorId, { type: "TIME_REQUEST" });
+    this.emit("timeRequested", { T0 });
+  }
+
+  handleTimeRequest(senderId: number): void {
+    this.connections.send(senderId, { type: "TIME_RESPONSE", serverTime: Date.now() });
+  }
+
+  async handleTimeResponse(msg: TcpMessage): Promise<void> {
+    const serverTime = msg.serverTime as number;
+    const T1 = Date.now();
+    const RTT = T1 - (msg._T0 as number ?? T1);
+    const adjustedTime = Math.floor(serverTime + RTT / 2);
+    const offset = adjustedTime - T1;
+
+    this.syncState.lastSync = Date.now();
+    this.syncState.lastOffset = offset;
+    this.emit("syncStateChanged", this.syncState);
+
+    if (Math.abs(offset) >= MIN_TIME_ADJUSTMENT_MS) {
+      try {
+        const dateStr = new Date(adjustedTime).toISOString().replace("T", " ").replace(/\.\d+Z/, "");
+        await execAsync(`sudo timedatectl set-time "${dateStr}"`);
+        logger.info(`Time adjusted by ${offset}ms`);
+        this.emit("logEvent", `Sincronización completada. Desfase: ${offset}ms.`);
+      } catch (err) {
+        logger.error(`Failed to set time: ${(err as Error).message}`);
+        this.emit("logEvent", `Error sincronizando reloj: ${(err as Error).message}`);
+      }
+    } else {
+      this.emit("logEvent", `Sincronización completada. Desfase mínimo: ${offset}ms.`);
+    }
+  }
+
+  handleCoordinatorChange(coordinatorId: number): void {
+    if (this.syncState.enabled && this.periodicTimer) {
+      clearInterval(this.periodicTimer);
+      this.periodicTimer = setInterval(() => this.syncNow(), CRISTIAN_SYNC_INTERVAL_MS);
+    }
+  }
+
+  loadState(state: SyncState): void {
+    this.syncState = state;
+    if (this.syncState.enabled) {
+      this.setEnabled(true);
+    }
+  }
+
+  toJSON(): SyncState {
+    return this.syncState;
+  }
+
+  destroy(): void {
+    if (this.periodicTimer) clearInterval(this.periodicTimer);
+  }
+}
