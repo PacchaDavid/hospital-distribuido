@@ -92,8 +92,8 @@ export class ElectionManager extends EventEmitter {
     myInfo.ip = this.identity.ip;
     myInfo.state = "STARTING";
 
-    this.startElection();
     this.startHeartbeatMonitor();
+    setTimeout(() => this.startElection(), 1500);
   }
 
   private startElection(): void {
@@ -157,7 +157,7 @@ export class ElectionManager extends EventEmitter {
       this.setState("FOLLOWER");
       this.emit("logEvent", `${this.identity.name} reconoce coordinador ID ${coordId}.`);
       this.emit("coordinatorChanged", coordId);
-    } else if (coordId < this.identity.id && this.state === "FOLLOWER") {
+    } else if (coordId < this.identity.id) {
       this.startElection();
     }
   }
@@ -225,7 +225,14 @@ export class ElectionManager extends EventEmitter {
   }
 
   handleNodeAppeared(nodeId: number): void {
-    if (nodeId > (this.coordinatorId ?? 0) && this.state !== "COORDINATOR") {
+    if (this.state === "COORDINATOR" && nodeId > this.identity.id) {
+      this.emit("logEvent", `Nodo ID ${nodeId} de mayor ID apareció. ${this.identity.name} cede liderazgo.`);
+      this.setState("FOLLOWER");
+      this.coordinatorId = nodeId;
+      this.emit("coordinatorChanged", nodeId);
+      return;
+    }
+    if (nodeId > (this.coordinatorId ?? 0)) {
       this.emit("logEvent", `Nodo ID ${nodeId} de mayor ID reapareció. ${this.identity.name} inicia elección.`);
       setTimeout(() => this.startElection(), 500);
     }

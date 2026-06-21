@@ -124,8 +124,15 @@ async function main() {
     handleTcpMessage(nodeId, message);
   });
 
+  tcpServer.on("identified", ({ nodeId }: { nodeId: number }) => {
+    election.handleNodeAppeared(nodeId);
+  });
+
   connections.on("identified", ({ nodeId }: { nodeId: number }) => {
     election.handleNodeAppeared(nodeId);
+    if (election.isCoordinator()) {
+      connections.send(nodeId, { type: "COORDINATOR", coordinatorId: identity.id });
+    }
   });
 
   function handleTcpMessage(senderId: number, msg: any) {
