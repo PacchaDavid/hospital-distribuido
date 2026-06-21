@@ -36,10 +36,10 @@ function CoordinatorPanel() {
     : null;
 
   return (
-    <section className="rounded-sm border border-crimson-500/30 bg-crimson-950/20 px-5 py-4">
+    <section className="rounded-sm border border-gold-500/30 bg-gold-900/10 px-5 py-4">
       <div className="flex items-center gap-2 mb-4">
-        <span className="w-1.5 h-1.5 rounded-full bg-crimson-500 animate-breath" />
-        <h2 className="font-display text-sm font-semibold text-crimson-400">
+        <span className="w-1.5 h-1.5 rounded-full bg-gold-500 animate-breath" />
+        <h2 className="font-display text-sm font-semibold text-gold-400">
           Panel de Coordinación
         </h2>
       </div>
@@ -54,9 +54,9 @@ function CoordinatorPanel() {
             <button
               onClick={handleSyncNow}
               disabled={syncing}
-              className="px-3.5 py-1.5 rounded-sm bg-crimson-500/20 border border-crimson-500/40
-                font-display text-xs font-medium text-crimson-400
-                hover:bg-crimson-500/30 hover:border-crimson-500/60
+              className="px-3.5 py-1.5 rounded-sm bg-gold-500/15 border border-gold-500/40
+                font-display text-xs font-medium text-gold-400
+                hover:bg-gold-500/25 hover:border-gold-500/60
                 disabled:opacity-40 disabled:cursor-not-allowed
                 transition-colors"
             >
@@ -68,7 +68,7 @@ function CoordinatorPanel() {
                 type="checkbox"
                 checked={cluster.syncState.enabled}
                 onChange={(e) => handleToggleSync(e.target.checked)}
-                className="accent-crimson-500 w-3 h-3"
+                className="accent-gold-500 w-3 h-3"
               />
               <span className="font-display text-[11px] text-bone-muted">
                 Automática

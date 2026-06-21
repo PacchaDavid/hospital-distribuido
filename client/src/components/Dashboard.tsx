@@ -26,11 +26,11 @@ interface CardStyle {
 
 const CARD_STYLES: Record<string, CardStyle> = {
   COORDINATOR: {
-    border: "border-crimson-500",
-    bg: "bg-crimson-950/40",
-    dot: "bg-crimson-500",
+    border: "border-gold-500",
+    bg: "bg-gold-900/20",
+    dot: "bg-gold-500",
     label: "Coordinador",
-    labelColor: "text-crimson-400",
+    labelColor: "text-gold-400",
   },
   FOLLOWER: {
     border: "border-jade-500/40",
@@ -92,7 +92,7 @@ function Dashboard({ nodes, cluster }: { nodes: NodeInfo[]; cluster: ClusterStat
         className={`relative rounded-sm border px-4 py-3.5 min-w-[200px] max-w-[260px] flex-1
           ${style.bg} ${style.border}
           ${state === "OFFLINE" ? "opacity-40" : ""}
-          ${isCoord ? "animate-pulse-glow" : ""}
+          ${isCoord ? "animate-pulse-glow-gold" : ""}
           ${isMe ? "ring-1 ring-bone/20" : ""}
           animate-fade-in-up`}
         style={{ animationDelay: `${index * 120}ms` }}

@@ -16,7 +16,7 @@ const NODE_NAMES: Record<number, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  COORDINATOR: "bg-crimson-500",
+  COORDINATOR: "bg-gold-500",
   FOLLOWER: "bg-jade-500",
   ELECTION: "bg-gold-500",
   SUSPECTED_DOWN: "bg-crimson-700",
@@ -135,7 +135,7 @@ function App() {
             <div className="text-right text-[11px] leading-tight text-bone-muted font-display">
               <p>
                 Coordinador:{" "}
-                <span className="text-crimson-400 font-semibold">
+                <span className="text-gold-400 font-semibold">
                   {cluster.coordinatorId
                     ? NODE_NAMES[cluster.coordinatorId] ?? `#${cluster.coordinatorId}`
                     : "—"}

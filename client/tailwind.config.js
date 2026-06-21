@@ -51,6 +51,14 @@ export default {
             boxShadow: "0 0 16px rgba(214, 64, 64, 0.45), 0 0 40px rgba(214, 64, 64, 0.18)",
           },
         },
+        "pulse-glow-gold": {
+          "0%, 100%": {
+            boxShadow: "0 0 8px rgba(212, 168, 90, 0.25), 0 0 20px rgba(212, 168, 90, 0.08)",
+          },
+          "50%": {
+            boxShadow: "0 0 16px rgba(212, 168, 90, 0.45), 0 0 40px rgba(212, 168, 90, 0.18)",
+          },
+        },
         "slide-in-right": {
           "0%": { opacity: "0", transform: "translateX(24px)" },
           "100%": { opacity: "1", transform: "translateX(0)" },
@@ -63,6 +71,7 @@ export default {
       animation: {
         "fade-in-up": "fade-in-up 0.6s ease-out forwards",
         "pulse-glow": "pulse-glow 3s ease-in-out infinite",
+        "pulse-glow-gold": "pulse-glow-gold 3s ease-in-out infinite",
         "slide-in-right": "slide-in-right 0.35s ease-out forwards",
         "breath": "breath 2.4s ease-in-out infinite",
       },

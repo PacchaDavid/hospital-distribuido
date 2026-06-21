@@ -78,9 +78,9 @@ function OrganPanel() {
         {!cluster.mutexAccess ? (
           <button
             onClick={handleRequestAccess}
-            className="px-3 py-1.5 rounded-sm bg-crimson-500/20 border border-crimson-500/40
-              font-display text-xs font-medium text-crimson-400
-              hover:bg-crimson-500/30 transition-colors"
+            className="px-3 py-1.5 rounded-sm border border-bone/20
+              font-display text-xs font-medium text-bone
+              hover:bg-bone/5 transition-colors"
           >
             Solicitar acceso
           </button>

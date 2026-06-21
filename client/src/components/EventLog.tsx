@@ -3,7 +3,7 @@ import { useStore } from "../store";
 
 function eventColor(message: string): string {
   if (message.toLowerCase().includes("coordinador") || message.toLowerCase().includes("elección") || message.toLowerCase().includes("election")) {
-    return "text-crimson-400";
+    return "text-gold-400";
   }
   if (message.toLowerCase().includes("mutex") || message.toLowerCase().includes("recurso")) {
     return "text-gold-400";
@@ -16,10 +16,12 @@ function eventColor(message: string): string {
 
 function EventLog() {
   const events = useStore((s) => s.events);
-  const endRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
   }, [events.length]);
 
   return (
@@ -33,7 +35,7 @@ function EventLog() {
         </span>
       </div>
 
-      <div className="h-48 overflow-y-auto scrollbar-thin space-y-1">
+      <div ref={scrollRef} className="h-48 overflow-y-auto scrollbar-thin space-y-1">
         {events.length === 0 && (
           <p className="font-display text-xs text-bone-muted/50 italic">
             No hay eventos aún...
@@ -59,7 +61,7 @@ function EventLog() {
           </div>
         ))}
 
-        <div ref={endRef} />
+        <div />
       </div>
     </section>
   );
