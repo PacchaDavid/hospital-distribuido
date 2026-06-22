@@ -85,6 +85,23 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        const response = await fetch("/api/status");
+        if (response.ok) {
+          const data = await response.json();
+          setCluster(data);
+        }
+      } catch (err) {
+        console.error("Error doing silent refresh of cluster status:", err);
+      }
+    };
+
+    const interval = setInterval(fetchStatus, 2000);
+    return () => clearInterval(interval);
+  }, [setCluster]);
+
   if (!cluster) {
     return (
       <div className="flex items-center justify-center min-h-screen">
