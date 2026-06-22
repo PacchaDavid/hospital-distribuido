@@ -131,11 +131,6 @@ export class ResourceManager extends EventEmitter {
       this.emit("organsChanged", this.organs, this.version);
       this.emit("logEvent", `Recurso replicado correctamente. Versión ${remoteVersion}.`);
     }
-
-    if (msg._source !== "broadcast") {
-      const senderId = (msg as any).senderId as number;
-      this.connections.send(senderId, { type: "RESOURCE_ACK", version: remoteVersion });
-    }
   }
 
   handleResourceAck(msg: TcpMessage): void {

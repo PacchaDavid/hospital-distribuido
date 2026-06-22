@@ -123,6 +123,7 @@ export class MutexManager extends EventEmitter {
     this.queue = [];
     this.currentUser = null;
     this.state = "LIBRE";
+    this.hasAccess = false;
     this.emit("mutexChanged", { state: this.state, queue: this.queue, currentUser: null });
   }
 }

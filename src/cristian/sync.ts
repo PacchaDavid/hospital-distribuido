@@ -22,6 +22,7 @@ export class CristianSync extends EventEmitter {
   private election: ElectionManager;
   private syncState: SyncState = { enabled: false, lastSync: null, lastOffset: null };
   private periodicTimer: ReturnType<typeof setInterval> | null = null;
+  private pendingSyncT0: number | null = null;
 
   constructor(
     identity: NodeIdentity,
@@ -56,25 +57,47 @@ export class CristianSync extends EventEmitter {
 
   async syncNow(): Promise<void> {
     const coordinatorId = this.election.getCoordinatorId();
-    if (!coordinatorId || coordinatorId === this.identity.id) return;
+    if (!coordinatorId) {
+      logger.warn("Cannot sync: no coordinator");
+      this.emit("logEvent", "Sincronización: no hay coordinador disponible.");
+      return;
+    }
+    if (coordinatorId === this.identity.id) {
+      logger.warn("Cannot sync: I am the coordinator (time server)");
+      this.emit("logEvent", "El coordinador es el servidor de tiempo. Los seguidores se sincronizan automáticamente.");
+      return;
+    }
     if (!this.connections.isConnected(coordinatorId)) {
       logger.warn("Cannot sync: coordinator not connected");
+      this.emit("logEvent", "Sincronización: coordinador no conectado.");
       return;
     }
 
     const T0 = Date.now();
-    this.connections.send(coordinatorId, { type: "TIME_REQUEST" });
-    this.emit("timeRequested", { T0 });
+    this.pendingSyncT0 = T0;
+    this.connections.send(coordinatorId, { type: "TIME_REQUEST", _T0: T0 });
+    this.emit("logEvent", `Solicitando sincronización al coordinador...`);
   }
 
-  handleTimeRequest(senderId: number): void {
-    this.connections.send(senderId, { type: "TIME_RESPONSE", serverTime: Date.now() });
+  handleTimeRequest(senderId: number, msg: TcpMessage): void {
+    const T1 = Date.now();
+    this.connections.send(senderId, {
+      type: "TIME_RESPONSE",
+      serverTime: T1,
+      _T0: msg._T0,
+    });
   }
 
   async handleTimeResponse(msg: TcpMessage): Promise<void> {
     const serverTime = msg.serverTime as number;
     const T1 = Date.now();
-    const RTT = T1 - (msg._T0 as number ?? T1);
+    const clientT0 = this.pendingSyncT0;
+    if (!clientT0) {
+      logger.warn("Received TIME_RESPONSE without pending request");
+      return;
+    }
+    const RTT = T1 - clientT0;
+    this.pendingSyncT0 = null;
     const adjustedTime = Math.floor(serverTime + RTT / 2);
     const offset = adjustedTime - T1;
 
@@ -83,6 +106,12 @@ export class CristianSync extends EventEmitter {
     this.emit("syncStateChanged", this.syncState);
 
     if (Math.abs(offset) >= MIN_TIME_ADJUSTMENT_MS) {
+      try {
+        await execAsync("sudo timedatectl set-ntp false");
+      } catch (err) {
+        logger.error(`Failed to disable NTP: ${(err as Error).message}`);
+        this.emit("logEvent", `Error deshabilitando NTP: ${(err as Error).message}`);
+      }
       try {
         const dateStr = new Date(adjustedTime).toISOString().replace("T", " ").replace(/\.\d+Z/, "");
         await execAsync(`sudo timedatectl set-time "${dateStr}"`);
@@ -93,6 +122,7 @@ export class CristianSync extends EventEmitter {
         this.emit("logEvent", `Error sincronizando reloj: ${(err as Error).message}`);
       }
     } else {
+      logger.info(`Offset ${offset}ms below threshold, no adjustment needed`);
       this.emit("logEvent", `Sincronización completada. Desfase mínimo: ${offset}ms.`);
     }
   }
@@ -118,4 +148,5 @@ export class CristianSync extends EventEmitter {
   destroy(): void {
     if (this.periodicTimer) clearInterval(this.periodicTimer);
   }
+
 }

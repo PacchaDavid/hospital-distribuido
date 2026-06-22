@@ -54,6 +54,9 @@ export function createApi(controllers: Controllers) {
   });
 
   app.post("/api/sync/now", async () => {
+    if (!controllers.election.isCoordinator()) {
+      return { error: "Solo el coordinador puede controlar la sincronización" };
+    }
     await controllers.cristian.syncNow();
     return { syncing: true };
   });

@@ -57,10 +57,13 @@ async function main() {
         election.handleCoordinator(msg);
         break;
       case "TIME_REQUEST":
-        cristian.handleTimeRequest(senderId);
+        cristian.handleTimeRequest(senderId, msg);
         break;
       case "TIME_RESPONSE":
         cristian.handleTimeResponse(msg);
+        break;
+      case "SYNC_NOW":
+        cristian.syncNow();
         break;
       case "MUTEX_REQUEST":
         mutex.handleMutexRequest(msg, senderId);
@@ -81,7 +84,6 @@ async function main() {
         resource.handleResourceSync(msg);
         break;
     }
-    socket?.broadcastState();
   }
 
   tcpServer.on("message", ({ nodeId, message, socket }: { nodeId: number; message: any; socket: any }) => {
@@ -177,7 +179,7 @@ async function main() {
 
   await startApi(controllers);
 
-  socket = new SocketManager({ identity, election, cristian, mutex, resource });
+  socket = new SocketManager({ identity, election, cristian, mutex, resource, connections });
 
   election.init();
 

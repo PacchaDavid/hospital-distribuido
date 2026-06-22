@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import { HEARTBEAT_INTERVAL_MS, HEARTBEAT_TIMEOUT_MS, ELECTION_TIMEOUT_MS, type NodeState } from "../config.js";
+import { HEARTBEAT_INTERVAL_MS, HEARTBEAT_TIMEOUT_MS, ELECTION_TIMEOUT_MS, NODE_TABLE, type NodeState } from "../config.js";
 import { logger } from "../logger.js";
 import type { NodeIdentity } from "../identity.js";
 import { getHigherNodes } from "../identity.js";
@@ -259,6 +259,14 @@ export class ElectionManager extends EventEmitter {
   }
 
   handleNodeAppeared(nodeId: number): void {
+    const entry = NODE_TABLE.find((n) => n.id === nodeId);
+    if (entry) {
+      const node = this.nodes.get(nodeId);
+      if (node && !node.ip) {
+        node.ip = entry.ip;
+        node.name = entry.name;
+      }
+    }
     if (this.state === "ELECTION") return;
     if (this.state === "COORDINATOR" && nodeId > this.identity.id) {
       this.emit("logEvent", `Nodo ID ${nodeId} de mayor ID apareció. ${this.identity.name} cede liderazgo.`);

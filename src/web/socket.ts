@@ -6,6 +6,7 @@ import type { CristianSync } from "../cristian/sync.js";
 import type { MutexManager } from "../mutex/mutex.js";
 import type { ResourceManager } from "../resource/resource.js";
 import type { NodeIdentity } from "../identity.js";
+import type { ConnectionManager } from "../tcp/connection.js";
 
 export class SocketManager {
   private io: Server;
@@ -15,6 +16,7 @@ export class SocketManager {
     cristian: CristianSync;
     mutex: MutexManager;
     resource: ResourceManager;
+    connections: ConnectionManager;
   };
 
   constructor(controllers: {
@@ -23,6 +25,7 @@ export class SocketManager {
     cristian: CristianSync;
     mutex: MutexManager;
     resource: ResourceManager;
+    connections: ConnectionManager;
   }) {
     this.controllers = controllers;
     this.io = new Server({ cors: { origin: "*" } });
@@ -33,6 +36,9 @@ export class SocketManager {
 
       socket.on("requestSync", () => {
         if (controllers.election.isCoordinator()) {
+          controllers.connections.broadcast({ type: "SYNC_NOW" });
+          logger.info("Coordinator broadcast SYNC_NOW to all followers");
+        } else {
           controllers.cristian.syncNow();
         }
       });
