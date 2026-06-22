@@ -113,7 +113,9 @@ export class CristianSync extends EventEmitter {
         this.emit("logEvent", `Error deshabilitando NTP: ${(err as Error).message}`);
       }
       try {
-        const dateStr = new Date(adjustedTime).toISOString().replace("T", " ").replace(/\.\d+Z/, "");
+        const date = new Date(adjustedTime);
+        const pad = (n: number) => String(n).padStart(2, "0");
+        const dateStr = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
         await execAsync(`sudo timedatectl set-time "${dateStr}"`);
         logger.info(`Time adjusted by ${offset}ms`);
         this.emit("logEvent", `Sincronización completada. Desfase: ${offset}ms.`);
