@@ -37,6 +37,10 @@ function App() {
   useEffect(() => {
     const socket = getSocket();
 
+    if (!socket.connected) {
+      socket.connect();
+    }
+
     socket.on("init", (data: ClusterState) => {
       setCluster(data);
     });
@@ -70,7 +74,14 @@ function App() {
     });
 
     return () => {
-      socket.disconnect();
+      socket.off("init");
+      socket.off("stateUpdate");
+      socket.off("event");
+      socket.off("organsChanged");
+      socket.off("syncStateChanged");
+      socket.off("mutexChanged");
+      socket.off("accessGranted");
+      socket.off("accessReleased");
     };
   }, []);
 

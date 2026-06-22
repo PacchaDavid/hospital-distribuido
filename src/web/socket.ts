@@ -1,5 +1,4 @@
 import { Server } from "socket.io";
-import { WS_PORT } from "../config.js";
 import { logger } from "../logger.js";
 import type { ElectionManager } from "../bully/election.js";
 import type { CristianSync } from "../cristian/sync.js";
@@ -19,16 +18,19 @@ export class SocketManager {
     connections: ConnectionManager;
   };
 
-  constructor(controllers: {
-    identity: NodeIdentity;
-    election: ElectionManager;
-    cristian: CristianSync;
-    mutex: MutexManager;
-    resource: ResourceManager;
-    connections: ConnectionManager;
-  }) {
+  constructor(
+    httpServer: any,
+    controllers: {
+      identity: NodeIdentity;
+      election: ElectionManager;
+      cristian: CristianSync;
+      mutex: MutexManager;
+      resource: ResourceManager;
+      connections: ConnectionManager;
+    }
+  ) {
     this.controllers = controllers;
-    this.io = new Server({ cors: { origin: "*" } });
+    this.io = new Server(httpServer, { cors: { origin: "*" } });
 
     this.io.on("connection", (socket) => {
       logger.debug(`Web client connected: ${socket.id}`);
@@ -78,11 +80,7 @@ export class SocketManager {
       });
     });
 
-    const httpServer = this.io.listen(WS_PORT);
-    httpServer.on("error", (err: NodeJS.ErrnoException) => {
-      logger.error(`Socket.IO failed on port ${WS_PORT}: ${err.message}`);
-    });
-    logger.info(`Socket.IO listening on port ${WS_PORT}`);
+    logger.info("Socket.IO initialized and attached to HTTP server");
   }
 
   private getStatePayload() {

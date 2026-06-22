@@ -111,12 +111,14 @@ export function createApi(controllers: Controllers) {
   return app;
 }
 
-export async function startApi(controllers: Controllers): Promise<void> {
+export async function startApi(controllers: Controllers): Promise<any> {
   const app = createApi(controllers);
   try {
     await app.listen({ port: HTTP_PORT, host: "0.0.0.0" });
     logger.info(`HTTP API listening on port ${HTTP_PORT}`);
+    return app;
   } catch (err) {
     logger.error(`Failed to start HTTP server: ${(err as Error).message}`);
+    throw err;
   }
 }

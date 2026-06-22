@@ -177,9 +177,9 @@ async function main() {
 
   const controllers: Controllers = { identity, election, cristian, mutex, resource };
 
-  await startApi(controllers);
+  const fastifyApp = await startApi(controllers);
 
-  socket = new SocketManager({ identity, election, cristian, mutex, resource, connections });
+  socket = new SocketManager(fastifyApp.server, { identity, election, cristian, mutex, resource, connections });
 
   election.init();
 
