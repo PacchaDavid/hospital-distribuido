@@ -138,6 +138,9 @@ export class ElectionManager extends EventEmitter {
   handleElection(msg: TcpMessage, senderId: number): void {
     if (senderId < this.identity.id) {
       this.connections.send(senderId, { type: "OK", senderId: this.identity.id });
+      if (this.state === "COORDINATOR") {
+        this.connections.send(senderId, { type: "COORDINATOR", coordinatorId: this.identity.id });
+      }
       if (this.state !== "ELECTION" && this.state !== "COORDINATOR" && this.state !== "FOLLOWER") {
         this.startElection();
       }
@@ -235,6 +238,9 @@ export class ElectionManager extends EventEmitter {
     this.lastHeartbeatAck = Date.now();
     if (this.coordinatorId) {
       this.markNodeAlive(this.coordinatorId, "COORDINATOR");
+    }
+    if (this.state === "SUSPECTED_DOWN") {
+      this.setState("FOLLOWER");
     }
   }
 
